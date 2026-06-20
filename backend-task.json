@@ -1,0 +1,15 @@
+{
+  "family": "backend-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "web",
+      "image": "mcd-deeplearning-backend:latest",
+      "essential": true,
+      "portMappings": [{"containerPort": 8000, "protocol": "tcp"}]
+    }
+  ]
+}

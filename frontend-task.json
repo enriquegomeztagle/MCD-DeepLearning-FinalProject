@@ -1,0 +1,16 @@
+{
+  "family": "frontend-task",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "web",
+      "image": "mcd-deeplearning-frontend:latest",
+      "essential": true,
+      "portMappings": [{"containerPort": 3000, "protocol": "tcp"}],
+      "environment": [{"name": "BACKEND_URL", "value": "host.docker.internal:8000"}]
+    }
+  ]
+}
