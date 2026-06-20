@@ -1,0 +1,19 @@
+services:
+  localstack:
+    image: localstack/localstack:latest
+    ports:
+      - "4566:4566"
+      - "4510-4559:4510-4559"
+    environment:
+      - SERVICES=cloudformation,ecs,ecr,ec2,elbv2,iam,secretsmanager,logs,sts,ssm
+      - DEBUG=0
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN}
+      - LOCALSTACK_APP_INSPECTOR=1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - ECS_DOCKER_FLAGS=-e LOCALSTACK_HOSTNAME=host.docker.internal -e EDGE_PORT=4566
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  localstack_data:
