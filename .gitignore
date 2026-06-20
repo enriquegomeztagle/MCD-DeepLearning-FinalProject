@@ -1,3 +1,25 @@
+# Project-specific
+frontend-task-resolved.json
+node_modules/
+infrastructure/cdk.out/
+infrastructure/.venv/
+infrastructure/cdk.context.json
+
+# ML/Data
+data/raw/*
+data/processed/*
+data/external/*
+models/trained/*
+models/exported/*
+!**/.gitkeep
+*.h5
+*.pkl
+*.pt
+*.pth
+*.onnx
+*.csv
+*.parquet
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
