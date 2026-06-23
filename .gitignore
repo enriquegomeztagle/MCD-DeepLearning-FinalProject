@@ -6,19 +6,28 @@ infrastructure/.venv/
 infrastructure/cdk.context.json
 
 # ML/Data
+# Raw events: 1.2 GB — too large for git
 data/raw/*
-data/processed/*
 data/external/*
-models/trained/*
 models/exported/*
 !**/.gitkeep
+
+# data/processed/ is NOT ignored — possessions.parquet (17 MB) and
+# splits CSVs (24 KB) are included so teammate can run without downloading
+
+# Ignore all model checkpoints except the two needed to run inference
+models/trained/*.pt
+models/trained/*.pkl
+models/trained/*.pth
+!models/trained/gru_best.pt
+!models/trained/baseline_logreg.pkl
+
+# Keep evaluation/training logs
+!models/trained/*.json
+
+# Other large ML formats we don't use
 *.h5
-*.pkl
-*.pt
-*.pth
 *.onnx
-*.csv
-*.parquet
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -1,6 +1,122 @@
-# MCD Deep Learning - Final Project
+# Football Possession Intelligence API
 
-React + FastAPI application deployed on AWS ECS Fargate via CDK.
+Deep learning system that estimates **P(shot | possession)** — the probability that an offensive football possession ends in a shot — using StatsBomb open event data.
+
+## Project Summary
+
+| Item | Value |
+|------|-------|
+| Task | Binary classification: does this possession end in a shot? |
+| Data | StatsBomb open data (Bundesliga 23/24, La Liga 20/21, Ligue 1 21/22 + 22/23) |
+| Main model | 2-layer GRU with projection layer |
+| Baseline | Logistic regression on aggregate features |
+| API | FastAPI (`/v1/predict-possession`) |
+| Frontend | React + Vite with pitch visualization |
+
+---
+
+## ML Pipeline Quick Start
+
+### 1. Install dependencies (GPU environment)
+
+```powershell
+$pip = "C:\Users\LUIS1\OneDrive\Escritorio\GPU-Test\.venv\Scripts\pip.exe"
+& $pip install pandas scikit-learn statsbombpy tqdm joblib matplotlib
+```
+
+### 2. Run the full ML pipeline
+
+```powershell
+$py = "C:\Users\LUIS1\OneDrive\Escritorio\GPU-Test\.venv\Scripts\python.exe"
+& $py run_pipeline.py all
+```
+
+Or stage by stage:
+
+```powershell
+& $py run_pipeline.py download       # fetch StatsBomb data (~127 matches)
+& $py run_pipeline.py possessions    # build possession dataset
+& $py run_pipeline.py splits         # create train/val/test splits
+& $py run_pipeline.py baseline       # train logistic regression
+& $py run_pipeline.py train          # train GRU model (uses GPU)
+& $py run_pipeline.py evaluate       # final evaluation
+```
+
+### 3. Start the backend
+
+```powershell
+$py = "C:\Users\LUIS1\OneDrive\Escritorio\GPU-Test\.venv\Scripts\python.exe"
+& $py -m uvicorn backend.app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+### 4. Start the frontend
+
+```powershell
+cd frontend && npm run dev
+```
+
+Open http://localhost:5173
+
+---
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Status + model availability |
+| GET | `/v1/models` | List models (gru / baseline) |
+| POST | `/v1/predict-possession` | P(shot) for one possession |
+| POST | `/v1/analyze-match` | Rank possessions in a match |
+
+### Example
+
+```bash
+curl -X POST http://localhost:8000/v1/predict-possession \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "gru",
+    "events": [
+      {"event_type": "Pass", "play_pattern": "Regular Play", "x": 75, "y": 40, "end_x": 88, "end_y": 35},
+      {"event_type": "Carry", "play_pattern": "Regular Play", "x": 88, "y": 35, "end_x": 105, "end_y": 38}
+    ]
+  }'
+```
+
+---
+
+## ML Architecture
+
+### GRU Model
+
+```
+Input: (B, T, 41)    — padded event sequences (T ≤ 50)
+Linear(41 → 64)      — projection
+GRU(64, 128, layers=2, dropout=0.3)
+h_n[-1] (B, 128)     — last hidden state
+Dropout(0.3)
+Linear(128 → 1) + Sigmoid
+Output: P(shot | possession)
+```
+
+**Feature vector per event (41 dims):**
+- Event type one-hot: 24 dims
+- Play pattern one-hot: 8 dims
+- Zone (def/mid/att): 4 dims + 1 unknown
+- Continuous: x, y, end_x, end_y, duration, under_pressure
+
+### Data Split
+
+| Split | Matches | Stratified |
+|-------|---------|-----------|
+| Train 70% | ~89 | ✓ all leagues |
+| Validation 15% | ~19 | ✓ all leagues |
+| Test 15% | ~19 | ✓ all leagues |
+
+Split rule: by `match_id`. No possession leaks.
+
+---
+
+## Infrastructure (AWS CDK / LocalStack)
 
 ## Architecture
 
