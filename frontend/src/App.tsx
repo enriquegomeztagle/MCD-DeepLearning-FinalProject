@@ -332,6 +332,11 @@ export default function App() {
           ))}
         </div>
       </div>
+
+      {/* Footer */}
+      <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '10px 0 2px', color: '#475569', fontSize: 12, borderTop: '1px solid #1e2a44' }}>
+        ⚽ Football Possession Intelligence — Luis Alejandro Guillén Alvarez · Enrique Ulises Báez Gómez Tagle
+      </div>
     </div>
   )
 }
