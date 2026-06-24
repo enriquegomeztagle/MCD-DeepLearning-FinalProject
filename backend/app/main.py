@@ -189,7 +189,8 @@ def _events_to_baseline_row(events: list[dict]) -> dict:
 def _baseline_predict_single(events: list[dict]) -> float:
     model = _load_baseline()
     row = _events_to_baseline_row(events)
-    prob = model.predict_proba(row)[0, 1]
+    with joblib.parallel_backend("sequential"):
+        prob = model.predict_proba(row)[0, 1]
     return float(prob)
 
 
