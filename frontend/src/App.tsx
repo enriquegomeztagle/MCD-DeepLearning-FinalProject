@@ -153,7 +153,8 @@ export default function App() {
   const statusTxt = apiStatus === 'ok' ? 'Conectado' : apiStatus === 'error' ? 'Sin conexión' : 'Conectando…'
 
   return (
-    <div style={{ minHeight: '100vh', background: '#070b16', color: '#e2e8f0', fontFamily: 'system-ui, sans-serif', display: 'grid', gridTemplateColumns: '290px 1fr 290px', gap: 14, padding: 14 }}>
+    <div style={{ minHeight: '100vh', background: '#070b16', color: '#e2e8f0', fontFamily: 'system-ui, sans-serif', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '290px 1fr 290px', gap: 14, padding: 14 }}>
 
       {/* ════ LEFT SIDEBAR ════ */}
       <div style={{ ...panel, padding: 18, display: 'flex', flexDirection: 'column', gap: 18 }}>
@@ -332,10 +333,11 @@ export default function App() {
           ))}
         </div>
       </div>
+      </div>
 
       {/* Footer */}
-      <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '10px 0 2px', color: '#475569', fontSize: 12, borderTop: '1px solid #1e2a44' }}>
-        ⚽ Football Possession Intelligence — Luis Alejandro Guillén Alvarez · Enrique Ulises Báez Gómez Tagle
+      <div style={{ textAlign: 'center', padding: '12px 0', color: '#94a3b8', fontSize: 12.5, borderTop: '1px solid #1e2a44', background: '#0b1322' }}>
+        ⚽ <strong style={{ color: '#c084fc' }}>Football Possession Intelligence</strong> — Luis Alejandro Guillén Alvarez · Enrique Ulises Báez Gómez Tagle
       </div>
     </div>
   )
