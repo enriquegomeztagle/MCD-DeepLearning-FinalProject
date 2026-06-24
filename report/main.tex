@@ -93,14 +93,14 @@
 %% ── PORTADA ──────────────────────────────────────────────────
 \begin{titlepage}
     \centering
-    \vspace*{2cm}
+    \vspace*{1.2cm}
 
     % Línea decorativa superior
     {\color{primary}\rule{\linewidth}{2pt}\par}
     \vspace{0.6cm}
 
     {\fontsize{32}{38}\selectfont\bfseries\color{primary}
-     PitchView ---\\[0.2em]
+     PitchView\\[0.2em]
      Football Possession\\[0.2em]
      Intelligence API\par}
 
@@ -118,7 +118,7 @@
      Luis Alejandro Guillén Alvarez \normalfont\textcolor{neutral}{· 0234598}\\[0.3em]
      \bfseries Enrique Ulises Báez Gómez Tagle \normalfont\textcolor{neutral}{· 0241823}\par}
 
-    \vspace{1.5cm}
+    \vspace{0.8cm}
 
     % Tarjetas de métricas clave
     \begin{tikzpicture}
@@ -151,15 +151,13 @@
     \vfill
 
     {\large\bfseries Maestría en Ciencia de Datos\par}
-    \vspace{0.3cm}
+    \vspace{0.2cm}
     {\normalsize Curso: Aprendizaje Profundo\par}
-    \vspace{0.3cm}
+    \vspace{0.2cm}
     {\normalsize\color{neutral} Junio 2026\par}
-    \vspace{0.4cm}
-    {\normalsize Plataforma en vivo: \href{https://srv7050.tailc60ea4.ts.net/}{srv7050.tailc60ea4.ts.net}\par}
+    \vspace{0.2cm}
+    {\small Plataforma en vivo: \href{https://srv7050.tailc60ea4.ts.net/}{srv7050.tailc60ea4.ts.net}\par}
 
-    \vspace{0.8cm}
-    {\color{primary}\rule{\linewidth}{0.8pt}\par}
 \end{titlepage}
 
 %% ── RESUMEN ──────────────────────────────────────────────────
@@ -188,6 +186,7 @@ El sistema es productizado a través de una API REST con FastAPI
 de trayectorias en campo y un medidor de probabilidad.
 \end{abstract}
 
+\newpage
 \tableofcontents
 \newpage
 
@@ -499,20 +498,19 @@ compuesto de tres bloques:
 \begin{table}[H]
 \centering
 \caption{Composición del vector de características por evento.}
-\begin{tabular}{lcc}
+\begin{tabularx}{\linewidth}{lcX}
 \toprule
-\textbf{Bloque} & \textbf{Dimensiones} & \textbf{Descripción} \\
+\textbf{Bloque} & \textbf{Dims} & \textbf{Descripción} \\
 \midrule
 Tipo de evento (one-hot)    & 23 & Pass, Carry, Dribble, Ball Receipt*, etc. \\
 Patrón de juego (one-hot)   & 8  & Regular Play, From Corner, From Free Kick, etc. \\
 Zona del campo (one-hot)    & 4  & Defensiva ($x<40$), Media, Atacante ($x>80$), Desconocida \\
 \midrule
-Características continuas   & 5  & $x_\text{norm}, y_\text{norm}, x_\text{end\_norm}, y_\text{end\_norm}, \text{duration\_norm}$ \\
-                            &    & + \code{under\_pressure} (binario) \\
+Características continuas   & 5  & $x_\text{norm}, y_\text{norm}, x_\text{end\_norm}, y_\text{end\_norm}, \text{duration\_norm}$ + \code{under\_pressure} (binario) \\
 \midrule
 \textbf{Total}              & \textbf{40} & \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \label{tab:features}
 \end{table}
 
