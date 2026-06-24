@@ -160,7 +160,7 @@ export default function App() {
       <div style={{ ...panel, padding: 18, display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#a855f7,#ec4899)' }} />
+            <span style={{ fontSize: 24 }}>⚽</span>
             <span style={{ fontWeight: 800, fontSize: 18, background: 'linear-gradient(135deg,#c084fc,#f472b6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>PitchView</span>
           </div>
           <p style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, marginTop: 10 }}>
