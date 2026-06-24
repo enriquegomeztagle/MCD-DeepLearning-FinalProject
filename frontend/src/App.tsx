@@ -153,11 +153,11 @@ export default function App() {
   const statusTxt = apiStatus === 'ok' ? 'Conectado' : apiStatus === 'error' ? 'Sin conexión' : 'Conectando…'
 
   return (
-    <div style={{ minHeight: '100vh', background: '#070b16', color: '#e2e8f0', fontFamily: 'system-ui, sans-serif', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ flex: 1, display: 'grid', gridTemplateColumns: '290px 1fr 290px', gap: 14, padding: 14 }}>
+    <div style={{ height: '100vh', overflow: 'hidden', background: '#070b16', color: '#e2e8f0', fontFamily: 'system-ui, sans-serif', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: '290px 1fr 290px', gap: 14, padding: 14 }}>
 
       {/* ════ LEFT SIDEBAR ════ */}
-      <div style={{ ...panel, padding: 18, display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <div style={{ ...panel, padding: 18, display: 'flex', flexDirection: 'column', gap: 18, minHeight: 0, overflow: 'hidden' }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 24 }}>⚽</span>
@@ -196,7 +196,7 @@ export default function App() {
         </div>
 
         {/* Sequence editor */}
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={label}>2 · Secuencia · {events.length} eventos</div>
             <button onClick={() => setShowPalette(s => !s)} style={{
@@ -221,7 +221,7 @@ export default function App() {
           <div
             onDragOver={e => e.preventDefault()}
             onDrop={e => { e.preventDefault(); if (e.dataTransfer.getData('src') === 'palette') addEvent(e.dataTransfer.getData('type')); setDragIndex(null) }}
-            style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 10 }}>
+            style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 10, flex: 1, minHeight: 0, overflowY: 'auto' }}>
             {events.map((ev, i) => {
               const c = colorFor(ev.event_type)
               return (
@@ -267,7 +267,7 @@ export default function App() {
       </div>
 
       {/* ════ CENTER ════ */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, minHeight: 0, overflowY: 'auto' }}>
         <div style={{ ...panel, padding: 14 }}>
           <div style={label}>Secuencia de eventos</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
@@ -298,7 +298,7 @@ export default function App() {
       </div>
 
       {/* ════ RIGHT SIDEBAR ════ */}
-      <div style={{ ...panel, padding: 18, display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ ...panel, padding: 18, display: 'flex', flexDirection: 'column', gap: 16, minHeight: 0, overflowY: 'auto' }}>
         <div>
           <div style={{ fontWeight: 800, fontSize: 16 }}>Análisis de Riesgo</div>
           <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Probabilidad de remate por modelo</div>
