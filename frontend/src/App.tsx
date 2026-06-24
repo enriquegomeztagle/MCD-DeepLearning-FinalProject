@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, type CSSProperties } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || ''
 
@@ -16,369 +16,399 @@ interface EventRecord {
   second: number | null
 }
 
-interface PredictionResult {
-  shot_probability: number
-  model_used: string
-  n_events: number
-  timestamp: string
+// ── Event colors ───────────────────────────────────────────────────────────────
+const EVENT_COLOR: Record<string, string> = {
+  'Pass': '#38bdf8',
+  'Carry': '#2dd4bf',
+  'Dribble': '#fbbf24',
+  'Pressure': '#f472b6',
+  'Ball Receipt*': '#a78bfa',
+  'Ball Recovery': '#22d3ee',
+  'Duel': '#fb923c',
+  'Interception': '#34d399',
+  'Clearance': '#94a3b8',
+  'Block': '#cbd5e1',
+  'Miscontrol': '#f87171',
+  'Foul Won': '#c084fc',
+}
+const colorFor = (t: string) => EVENT_COLOR[t] || '#94a3b8'
+const shortName = (t: string) => (t === 'Ball Receipt*' ? 'Receipt*' : t)
+
+// ── Preset scenarios (Spanish) ──────────────────────────────────────────────────
+const SAMPLES: Record<string, { icon: string; desc: string; events: EventRecord[] }> = {
+  'Ataque Peligroso': {
+    icon: '⚡',
+    desc: 'Progresión profunda al área bajo presión',
+    events: [
+      { event_type: 'Ball Receipt*', play_pattern: 'Regular Play', x: 75, y: 40, end_x: null, end_y: null, duration: 0.1, under_pressure: 0, minute: 62, second: 5 },
+      { event_type: 'Carry', play_pattern: 'Regular Play', x: 75, y: 40, end_x: 88, end_y: 35, duration: 1.5, under_pressure: 0, minute: 62, second: 6 },
+      { event_type: 'Pass', play_pattern: 'Regular Play', x: 88, y: 35, end_x: 95, end_y: 28, duration: 0.8, under_pressure: 0, minute: 62, second: 8 },
+      { event_type: 'Ball Receipt*', play_pattern: 'Regular Play', x: 95, y: 28, end_x: null, end_y: null, duration: 0.1, under_pressure: 1, minute: 62, second: 9 },
+      { event_type: 'Dribble', play_pattern: 'Regular Play', x: 95, y: 28, end_x: 100, end_y: 30, duration: 1.2, under_pressure: 1, minute: 62, second: 10 },
+      { event_type: 'Carry', play_pattern: 'Regular Play', x: 100, y: 30, end_x: 108, end_y: 36, duration: 1.0, under_pressure: 0, minute: 62, second: 12 },
+    ],
+  },
+  'Build-up Seguro': {
+    icon: '🛡️',
+    desc: 'Pases cortos en campo propio, sin riesgo',
+    events: [
+      { event_type: 'Pass', play_pattern: 'From Goal Kick', x: 12, y: 40, end_x: 30, end_y: 35, duration: 1.2, under_pressure: 0, minute: 33, second: 0 },
+      { event_type: 'Ball Receipt*', play_pattern: 'From Goal Kick', x: 30, y: 35, end_x: null, end_y: null, duration: 0.1, under_pressure: 0, minute: 33, second: 2 },
+      { event_type: 'Pass', play_pattern: 'Regular Play', x: 30, y: 35, end_x: 25, end_y: 20, duration: 0.9, under_pressure: 0, minute: 33, second: 3 },
+      { event_type: 'Ball Receipt*', play_pattern: 'Regular Play', x: 25, y: 20, end_x: null, end_y: null, duration: 0.1, under_pressure: 0, minute: 33, second: 5 },
+      { event_type: 'Carry', play_pattern: 'Regular Play', x: 25, y: 20, end_x: 40, end_y: 25, duration: 2.0, under_pressure: 0, minute: 33, second: 6 },
+      { event_type: 'Pass', play_pattern: 'Regular Play', x: 40, y: 25, end_x: 45, end_y: 60, duration: 0.7, under_pressure: 0, minute: 33, second: 9 },
+    ],
+  },
+  'Contraataque': {
+    icon: '🚀',
+    desc: 'Transición rápida tras recuperación',
+    events: [
+      { event_type: 'Ball Recovery', play_pattern: 'From Counter', x: 35, y: 42, end_x: null, end_y: null, duration: 0.3, under_pressure: 0, minute: 78, second: 22 },
+      { event_type: 'Carry', play_pattern: 'From Counter', x: 35, y: 42, end_x: 65, end_y: 38, duration: 2.5, under_pressure: 0, minute: 78, second: 23 },
+      { event_type: 'Pass', play_pattern: 'From Counter', x: 65, y: 38, end_x: 90, end_y: 35, duration: 1.1, under_pressure: 0, minute: 78, second: 26 },
+      { event_type: 'Ball Receipt*', play_pattern: 'From Counter', x: 90, y: 35, end_x: null, end_y: null, duration: 0.1, under_pressure: 1, minute: 78, second: 28 },
+      { event_type: 'Carry', play_pattern: 'From Counter', x: 90, y: 35, end_x: 105, end_y: 38, duration: 1.4, under_pressure: 1, minute: 78, second: 29 },
+    ],
+  },
 }
 
-// ── Preset sample possessions ─────────────────────────────────────────────────
-const SAMPLES: Record<string, EventRecord[]> = {
-  'Dangerous Attack (High xShot)': [
-    { event_type: 'Ball Receipt*', play_pattern: 'Regular Play', x: 75, y: 40, end_x: null, end_y: null, duration: 0.1, under_pressure: 0, minute: 62, second: 5 },
-    { event_type: 'Carry', play_pattern: 'Regular Play', x: 75, y: 40, end_x: 88, end_y: 35, duration: 1.5, under_pressure: 0, minute: 62, second: 6 },
-    { event_type: 'Pass', play_pattern: 'Regular Play', x: 88, y: 35, end_x: 95, end_y: 28, duration: 0.8, under_pressure: 0, minute: 62, second: 8 },
-    { event_type: 'Ball Receipt*', play_pattern: 'Regular Play', x: 95, y: 28, end_x: null, end_y: null, duration: 0.1, under_pressure: 1, minute: 62, second: 9 },
-    { event_type: 'Dribble', play_pattern: 'Regular Play', x: 95, y: 28, end_x: 100, end_y: 30, duration: 1.2, under_pressure: 1, minute: 62, second: 10 },
-    { event_type: 'Carry', play_pattern: 'Regular Play', x: 100, y: 30, end_x: 108, end_y: 36, duration: 1.0, under_pressure: 0, minute: 62, second: 12 },
-  ],
-  'Safe Build-up (Low xShot)': [
-    { event_type: 'Pass', play_pattern: 'From Goal Kick', x: 12, y: 40, end_x: 30, end_y: 35, duration: 1.2, under_pressure: 0, minute: 33, second: 0 },
-    { event_type: 'Ball Receipt*', play_pattern: 'From Goal Kick', x: 30, y: 35, end_x: null, end_y: null, duration: 0.1, under_pressure: 0, minute: 33, second: 2 },
-    { event_type: 'Pass', play_pattern: 'Regular Play', x: 30, y: 35, end_x: 25, end_y: 20, duration: 0.9, under_pressure: 0, minute: 33, second: 3 },
-    { event_type: 'Ball Receipt*', play_pattern: 'Regular Play', x: 25, y: 20, end_x: null, end_y: null, duration: 0.1, under_pressure: 0, minute: 33, second: 5 },
-    { event_type: 'Carry', play_pattern: 'Regular Play', x: 25, y: 20, end_x: 40, end_y: 25, duration: 2.0, under_pressure: 0, minute: 33, second: 6 },
-    { event_type: 'Pass', play_pattern: 'Regular Play', x: 40, y: 25, end_x: 45, end_y: 60, duration: 0.7, under_pressure: 0, minute: 33, second: 9 },
-  ],
-  'Counter Attack': [
-    { event_type: 'Ball Recovery', play_pattern: 'From Counter', x: 35, y: 42, end_x: null, end_y: null, duration: 0.3, under_pressure: 0, minute: 78, second: 22 },
-    { event_type: 'Carry', play_pattern: 'From Counter', x: 35, y: 42, end_x: 65, end_y: 38, duration: 2.5, under_pressure: 0, minute: 78, second: 23 },
-    { event_type: 'Pass', play_pattern: 'From Counter', x: 65, y: 38, end_x: 90, end_y: 35, duration: 1.1, under_pressure: 0, minute: 78, second: 26 },
-    { event_type: 'Ball Receipt*', play_pattern: 'From Counter', x: 90, y: 35, end_x: null, end_y: null, duration: 0.1, under_pressure: 1, minute: 78, second: 28 },
-    { event_type: 'Carry', play_pattern: 'From Counter', x: 90, y: 35, end_x: 105, end_y: 38, duration: 1.4, under_pressure: 1, minute: 78, second: 29 },
-  ],
-}
+// Valid model vocabulary (Shot excluded by design — causal prediction)
+const AVAILABLE_EVENTS = [
+  'Pass', 'Carry', 'Ball Receipt*', 'Dribble', 'Ball Recovery', 'Pressure',
+  'Duel', 'Interception', 'Clearance', 'Block', 'Miscontrol', 'Foul Won',
+]
 
-// ── Pitch SVG component ───────────────────────────────────────────────────────
-function PitchViz({ events }: { events: EventRecord[] }) {
-  // StatsBomb field: 120x80. We'll scale to SVG 600x400
-  const scaleX = 5
-  const scaleY = 5
-
-  const pathPoints = events
-    .filter(e => e.x !== null && e.y !== null)
-    .map(e => ({ x: (e.x || 0) * scaleX, y: (e.y || 0) * scaleY, type: e.event_type }))
-
-  const pathD = pathPoints.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
-
-  const colorForType = (t: string) => {
-    if (t === 'Shot') return '#ef4444'
-    if (t === 'Pass') return '#3b82f6'
-    if (t === 'Carry') return '#10b981'
-    if (t === 'Dribble') return '#f59e0b'
-    return '#6b7280'
+// Append a new event, progressing toward the rival goal (x → 120)
+function makeEvent(prev: EventRecord[], t: string): EventRecord {
+  const last = prev[prev.length - 1]
+  const baseX = last ? (last.end_x ?? last.x ?? 30) : 30
+  const x = Math.min(116, Math.round(baseX + 12))
+  const y = Math.round(40 + (prev.length % 2 === 0 ? -8 : 8))
+  const moves = t === 'Pass' || t === 'Carry' || t === 'Dribble'
+  return {
+    event_type: t, play_pattern: 'Regular Play',
+    x, y,
+    end_x: moves ? Math.min(119, x + 12) : null,
+    end_y: moves ? y - 4 : null,
+    duration: 1.0, under_pressure: x > 80 ? 1 : 0,
+    minute: 50, second: prev.length * 2,
   }
-
-  return (
-    <svg viewBox="0 0 600 400" style={{ width: '100%', background: '#2d5016', borderRadius: 8 }}>
-      {/* Pitch markings */}
-      <rect x="0" y="0" width="600" height="400" fill="#3a6b1a" stroke="#fff" strokeWidth="2" />
-      <rect x="0" y="0" width="300" height="400" fill="none" stroke="#fff" strokeWidth="1" strokeDasharray="4,4" opacity="0.4" />
-      <circle cx="300" cy="200" r="50" fill="none" stroke="#fff" strokeWidth="1" opacity="0.5" />
-      <line x1="300" y1="0" x2="300" y2="400" stroke="#fff" strokeWidth="1" opacity="0.4" />
-      {/* Goals */}
-      <rect x="0" y="155" width="18" height="90" fill="none" stroke="#fff" strokeWidth="2" />
-      <rect x="582" y="155" width="18" height="90" fill="none" stroke="#fff" strokeWidth="2" />
-      {/* Penalty areas */}
-      <rect x="0" y="100" width="90" height="200" fill="none" stroke="#fff" strokeWidth="1" opacity="0.6" />
-      <rect x="510" y="100" width="90" height="200" fill="none" stroke="#fff" strokeWidth="1" opacity="0.6" />
-      {/* Thirds lines */}
-      <line x1="200" y1="0" x2="200" y2="400" stroke="#fff" strokeWidth="1" opacity="0.2" strokeDasharray="2,6" />
-      <line x1="400" y1="0" x2="400" y2="400" stroke="#fff" strokeWidth="1" opacity="0.2" strokeDasharray="2,6" />
-
-      {/* Path */}
-      {pathPoints.length > 1 && (
-        <path d={pathD} fill="none" stroke="#fde047" strokeWidth="2.5" strokeLinejoin="round" opacity="0.85" />
-      )}
-      {/* Event dots */}
-      {pathPoints.map((p, i) => (
-        <circle
-          key={i}
-          cx={p.x}
-          cy={p.y}
-          r={p.type === 'Shot' ? 8 : 5}
-          fill={colorForType(p.type)}
-          stroke="#fff"
-          strokeWidth="1.5"
-          opacity="0.9"
-        >
-          <title>{p.type}</title>
-        </circle>
-      ))}
-      {/* Direction arrow on first point */}
-      {pathPoints.length > 0 && (
-        <text x={pathPoints[0].x + 6} y={pathPoints[0].y - 6} fill="#fde047" fontSize="10" fontWeight="bold">Start</text>
-      )}
-
-      {/* Legend */}
-      {[['Pass', '#3b82f6'], ['Carry', '#10b981'], ['Dribble', '#f59e0b'], ['Shot', '#ef4444'], ['Other', '#6b7280']].map(([t, c], i) => (
-        <g key={t} transform={`translate(${10 + i * 110}, 385)`}>
-          <circle cx="6" cy="0" r="5" fill={c} />
-          <text x="14" y="4" fill="#fff" fontSize="9">{t}</text>
-        </g>
-      ))}
-    </svg>
-  )
 }
 
-// ── Probability gauge ─────────────────────────────────────────────────────────
-function ProbGauge({ prob }: { prob: number }) {
-  const pct = prob * 100
-  const color = prob > 0.6 ? '#ef4444' : prob > 0.35 ? '#f59e0b' : '#22c55e'
-  const arcX = 100
-  const arcY = 90
-  const r = 70
-  const angle = (pct / 100) * 180
-  const rad = (angle - 180) * (Math.PI / 180)
-  const needleX = arcX + r * Math.cos(rad)
-  const needleY = arcY + r * Math.sin(rad)
-
-  return (
-    <div style={{ textAlign: 'center' }}>
-      <svg viewBox="0 0 200 110" style={{ width: 200 }}>
-        <path d={`M ${arcX - r} ${arcY} A ${r} ${r} 0 0 1 ${arcX + r} ${arcY}`}
-          fill="none" stroke="#e5e7eb" strokeWidth="16" strokeLinecap="round" />
-        <path d={`M ${arcX - r} ${arcY} A ${r} ${r} 0 0 1 ${arcX + r} ${arcY}`}
-          fill="none" stroke={color} strokeWidth="16" strokeLinecap="round"
-          strokeDasharray={`${pct * 2.2} 220`} opacity="0.85" />
-        <line x1={arcX} y1={arcY} x2={needleX} y2={needleY}
-          stroke="#1f2937" strokeWidth="3" strokeLinecap="round" />
-        <circle cx={arcX} cy={arcY} r="6" fill="#1f2937" />
-        <text x={arcX} y={arcY + 18} textAnchor="middle" fontSize="22" fontWeight="bold" fill={color}>
-          {pct.toFixed(1)}%
-        </text>
-        <text x="20" y={arcY + 4} fontSize="9" fill="#6b7280">Low</text>
-        <text x="160" y={arcY + 4} fontSize="9" fill="#6b7280">High</text>
-      </svg>
-    </div>
-  )
-}
-
-// ── Event timeline ─────────────────────────────────────────────────────────────
-function EventTimeline({ events }: { events: EventRecord[] }) {
-  const typeColor: Record<string, string> = {
-    'Pass': '#3b82f6', 'Carry': '#10b981', 'Dribble': '#f59e0b',
-    'Shot': '#ef4444', 'Ball Receipt*': '#8b5cf6', 'Pressure': '#ec4899',
-    'Ball Recovery': '#06b6d4', 'Duel': '#f97316',
-  }
-  return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-      {events.map((e, i) => {
-        const color = typeColor[e.event_type] || '#6b7280'
-        return (
-          <div key={i} title={`${e.event_type} @ (${e.x?.toFixed(0)}, ${e.y?.toFixed(0)})`}
-            style={{
-              background: color + '22', border: `1.5px solid ${color}`,
-              borderRadius: 6, padding: '2px 8px', fontSize: 11, color,
-              fontWeight: 600, cursor: 'default',
-            }}>
-            {i + 1}. {e.event_type}
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [selectedSample, setSelectedSample] = useState<string>('Dangerous Attack (High xShot)')
-  const [events, setEvents] = useState<EventRecord[]>(SAMPLES['Dangerous Attack (High xShot)'])
-  const [model, setModel] = useState<'gru' | 'baseline'>('gru')
-  const [result, setResult] = useState<PredictionResult | null>(null)
+  const [scenario, setScenario] = useState<string>('Ataque Peligroso')
+  const [events, setEvents] = useState<EventRecord[]>(SAMPLES['Ataque Peligroso'].events)
+  const [result, setResult] = useState<{ gru: number; baseline: number; n: number } | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [apiStatus, setApiStatus] = useState<'unknown' | 'ok' | 'error'>('unknown')
+  const [showPalette, setShowPalette] = useState(false)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
 
   const checkHealth = async () => {
     try {
       const res = await fetch(`${API_URL}/health`)
-      if (res.ok) setApiStatus('ok')
-      else setApiStatus('error')
-    } catch {
-      setApiStatus('error')
-    }
+      setApiStatus(res.ok ? 'ok' : 'error')
+    } catch { setApiStatus('error') }
   }
-
   useEffect(() => {
     checkHealth()
     const id = setInterval(checkHealth, 30000)
     return () => clearInterval(id)
   }, [])
 
-  const runPrediction = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const res = await fetch(`${API_URL}/v1/predict-possession`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ events, model }),
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.detail || `HTTP ${res.status}`)
-      }
-      const data = await res.json()
-      setResult(data)
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleSampleChange = (name: string) => {
-    setSelectedSample(name)
-    setEvents(SAMPLES[name])
+  const loadPreset = (name: string) => {
+    setScenario(name)
+    setEvents(SAMPLES[name].events)
     setResult(null)
   }
+  const addEvent = (t: string) => { setEvents(p => [...p, makeEvent(p, t)]); setResult(null) }
+  const removeAt = (i: number) => { setEvents(p => p.filter((_, j) => j !== i)); setResult(null) }
+  const moveItem = (from: number, to: number) => setEvents(p => {
+    if (from === to || from < 0) return p
+    const c = [...p]; const [m] = c.splice(from, 1); c.splice(to, 0, m); return c
+  })
 
-  const statusColors = { unknown: '#6b7280', ok: '#22c55e', error: '#ef4444' }
+  const analyze = async () => {
+    setLoading(true); setError(null)
+    try {
+      const call = async (model: string) => {
+        const res = await fetch(`${API_URL}/v1/predict-possession`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ events, model }),
+        })
+        if (!res.ok) { const e = await res.json(); throw new Error(e.detail || `HTTP ${res.status}`) }
+        return res.json()
+      }
+      const [g, b] = await Promise.all([call('gru'), call('baseline')])
+      setResult({ gru: g.shot_probability, baseline: b.shot_probability, n: g.n_events })
+    } catch (e: any) { setError(e.message) } finally { setLoading(false) }
+  }
+
+  // ── styles ──
+  const panel: CSSProperties = { background: '#0f1729', border: '1px solid #1e2a44', borderRadius: 14 }
+  const label: CSSProperties = { fontSize: 11, letterSpacing: 1, color: '#64748b', textTransform: 'uppercase', fontWeight: 700 }
+  const statusDot = apiStatus === 'ok' ? '#22c55e' : apiStatus === 'error' ? '#ef4444' : '#eab308'
+  const statusTxt = apiStatus === 'ok' ? 'Conectado' : apiStatus === 'error' ? 'Sin conexión' : 'Conectando…'
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', fontFamily: 'system-ui, sans-serif' }}>
-      {/* Header */}
-      <div style={{ background: '#0f172a', color: '#f1f5f9', padding: '16px 32px', display: 'flex', alignItems: 'center', gap: 16 }}>
-        <span style={{ fontSize: 28 }}>⚽</span>
+    <div style={{ minHeight: '100vh', background: '#070b16', color: '#e2e8f0', fontFamily: 'system-ui, sans-serif', display: 'grid', gridTemplateColumns: '290px 1fr 290px', gap: 14, padding: 14 }}>
+
+      {/* ════ LEFT SIDEBAR ════ */}
+      <div style={{ ...panel, padding: 18, display: 'flex', flexDirection: 'column', gap: 18 }}>
         <div>
-          <div style={{ fontWeight: 700, fontSize: 20 }}>Football Possession Intelligence</div>
-          <div style={{ fontSize: 13, color: '#94a3b8' }}>Deep Learning · P(shot | possession)</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg,#a855f7,#ec4899)' }} />
+            <span style={{ fontWeight: 800, fontSize: 18, background: 'linear-gradient(135deg,#c084fc,#f472b6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>PitchView</span>
+          </div>
+          <p style={{ fontSize: 12, color: '#64748b', lineHeight: 1.5, marginTop: 10 }}>
+            Modelo GRU de Deep Learning entrenado sobre 21 K posesiones reales. Predice la probabilidad de remate a partir de la secuencia de eventos.
+          </p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, fontSize: 12, color: '#94a3b8' }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: statusDot, boxShadow: `0 0 8px ${statusDot}` }} />
+            {statusTxt}
+          </div>
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={checkHealth}
-            style={{ background: '#1e293b', color: '#94a3b8', border: '1px solid #334155', borderRadius: 6, padding: '6px 14px', cursor: 'pointer', fontSize: 12 }}>
-            Check API
+
+        {/* Scenarios */}
+        <div>
+          <div style={label}>1 · Elige escenario</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+            {Object.entries(SAMPLES).map(([name, s]) => {
+              const active = scenario === name
+              return (
+                <button key={name} onClick={() => loadPreset(name)} style={{
+                  textAlign: 'left', display: 'flex', gap: 10, alignItems: 'center', padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                  border: active ? '1px solid #ec4899' : '1px solid #1e2a44',
+                  background: active ? 'linear-gradient(135deg,#a855f71a,#ec48991a)' : '#0b1322',
+                }}>
+                  <span style={{ fontSize: 18 }}>{s.icon}</span>
+                  <span>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: active ? '#f472b6' : '#e2e8f0' }}>{name}</div>
+                    <div style={{ fontSize: 11, color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>{s.desc}</div>
+                  </span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Sequence editor */}
+        <div style={{ flex: 1 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={label}>2 · Secuencia · {events.length} eventos</div>
+            <button onClick={() => setShowPalette(s => !s)} style={{
+              display: 'flex', alignItems: 'center', gap: 4, padding: '5px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
+              background: 'linear-gradient(135deg,#a855f7,#ec4899)', color: '#fff', fontSize: 12, fontWeight: 700,
+            }}>+ Agregar</button>
+          </div>
+
+          {showPalette && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 8, padding: 8, background: '#0b1322', borderRadius: 8, border: '1px solid #1e2a44' }}>
+              {AVAILABLE_EVENTS.map(t => (
+                <div key={t} draggable
+                  onDragStart={e => { e.dataTransfer.setData('type', t); e.dataTransfer.setData('src', 'palette') }}
+                  onClick={() => addEvent(t)}
+                  style={{ cursor: 'grab', fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 6, color: colorFor(t), border: `1px solid ${colorFor(t)}55`, background: `${colorFor(t)}15` }}>
+                  {shortName(t)}
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div
+            onDragOver={e => e.preventDefault()}
+            onDrop={e => { e.preventDefault(); if (e.dataTransfer.getData('src') === 'palette') addEvent(e.dataTransfer.getData('type')); setDragIndex(null) }}
+            style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 10 }}>
+            {events.map((ev, i) => {
+              const c = colorFor(ev.event_type)
+              return (
+                <div key={i} draggable
+                  onDragStart={e => { e.dataTransfer.setData('idx', String(i)); e.dataTransfer.setData('src', 'seq'); setDragIndex(i) }}
+                  onDragEnd={() => setDragIndex(null)}
+                  onDragOver={e => e.preventDefault()}
+                  onDrop={e => {
+                    e.preventDefault()
+                    if (e.dataTransfer.getData('src') === 'seq') moveItem(Number(e.dataTransfer.getData('idx')), i)
+                    setDragIndex(null)
+                  }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, cursor: 'grab',
+                    background: '#0b1322', borderLeft: `3px solid ${c}`, border: '1px solid #1e2a44', borderLeftWidth: 3,
+                    opacity: dragIndex === i ? 0.4 : 1,
+                  }}>
+                  <span style={{ color: '#475569', fontSize: 11, width: 12 }}>{i + 1}</span>
+                  <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: c }}>{shortName(ev.event_type)}</span>
+                  {ev.under_pressure === 1 && <span style={{ fontSize: 10, color: '#f472b6' }}>⚠ presión</span>}
+                  <span style={{ fontSize: 10, color: '#475569' }}>{ev.x},{ev.y}</span>
+                  <button onClick={() => removeAt(i)} style={{ border: 'none', background: 'transparent', color: '#64748b', cursor: 'pointer', fontSize: 14, lineHeight: 1 }}>×</button>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Analyze */}
+        <div>
+          <div style={label}>3 · Analizar</div>
+          <button onClick={analyze} disabled={loading || events.length === 0} style={{
+            width: '100%', marginTop: 10, padding: '13px 0', borderRadius: 10, border: 'none',
+            cursor: (loading || events.length === 0) ? 'not-allowed' : 'pointer',
+            background: (loading || events.length === 0) ? '#334155' : 'linear-gradient(135deg,#a855f7,#ec4899)',
+            color: '#fff', fontWeight: 800, fontSize: 15,
+          }}>
+            {loading ? 'Analizando…' : '⚡ Analizar Posesión'}
           </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-            <div style={{ width: 8, height: 8, borderRadius: '50%', background: statusColors[apiStatus] }} />
-            <span style={{ color: '#94a3b8' }}>{apiStatus === 'ok' ? 'API Online' : apiStatus === 'error' ? 'API Offline' : 'Unknown'}</span>
+          <div style={{ fontSize: 10, color: '#475569', marginTop: 6, textAlign: 'center' }}>GRU + Baseline corren en paralelo</div>
+          {error && <div style={{ marginTop: 8, fontSize: 12, color: '#f87171' }}>{error}</div>}
+        </div>
+      </div>
+
+      {/* ════ CENTER ════ */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ ...panel, padding: 14 }}>
+          <div style={label}>Secuencia de eventos</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+            {events.map((ev, i) => {
+              const c = colorFor(ev.event_type)
+              return (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 10, background: '#0b1322', border: `1px solid ${c}44` }}>
+                  <span style={{ width: 7, height: 7, borderRadius: '50%', background: c }} />
+                  <span style={{ fontSize: 12, fontWeight: 600 }}>{shortName(ev.event_type)}</span>
+                  {ev.under_pressure === 1 && <span style={{ fontSize: 10, color: '#f472b6' }}>⚠ presión</span>}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        <div style={{ ...panel, padding: 14, flex: 1 }}>
+          <div style={label}>Trayectoria en campo · StatsBomb 120×80</div>
+          <Pitch events={events} />
+          <div style={{ display: 'flex', gap: 24, justifyContent: 'center', marginTop: 10 }}>
+            {[['Pass', '#38bdf8'], ['Carry', '#2dd4bf'], ['Dribble', '#fbbf24'], ['Pressure', '#f472b6']].map(([t, c]) => (
+              <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#94a3b8' }}>
+                <span style={{ width: 9, height: 9, borderRadius: '50%', background: c }} />{t}
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '24px 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      {/* ════ RIGHT SIDEBAR ════ */}
+      <div style={{ ...panel, padding: 18, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: 16 }}>Análisis de Riesgo</div>
+          <div style={{ fontSize: 11, color: '#64748b', marginTop: 2 }}>Probabilidad de remate por modelo</div>
+        </div>
 
-        {/* Left column: controls */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-          {/* Sample selector */}
-          <div style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 4px #00000018' }}>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: '#1e293b' }}>
-              Select Possession Scenario
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {Object.keys(SAMPLES).map(name => (
-                <button key={name} onClick={() => handleSampleChange(name)}
-                  style={{
-                    textAlign: 'left', padding: '10px 14px', borderRadius: 8,
-                    border: selectedSample === name ? '2px solid #3b82f6' : '1.5px solid #e2e8f0',
-                    background: selectedSample === name ? '#eff6ff' : '#f8fafc',
-                    color: '#1e293b', fontWeight: selectedSample === name ? 600 : 400,
-                    cursor: 'pointer', fontSize: 13,
-                  }}>
-                  {name}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Model selector */}
-          <div style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 4px #00000018' }}>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: '#1e293b' }}>Model</div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              {(['gru', 'baseline'] as const).map(m => (
-                <button key={m} onClick={() => setModel(m)}
-                  style={{
-                    flex: 1, padding: '8px 0', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                    border: model === m ? '2px solid #3b82f6' : '1.5px solid #e2e8f0',
-                    background: model === m ? '#eff6ff' : '#f8fafc',
-                    color: model === m ? '#1d4ed8' : '#64748b',
-                  }}>
-                  {m === 'gru' ? '🧠 GRU (Deep)' : '📊 Baseline (LR)'}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Event timeline */}
-          <div style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 4px #00000018' }}>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4, color: '#1e293b' }}>
-              Possession Events ({events.length})
-            </div>
-            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 8 }}>
-              Sequence fed to the model
-            </div>
-            <EventTimeline events={events} />
-          </div>
-
-          {/* Predict button */}
-          <button onClick={runPrediction} disabled={loading}
-            style={{
-              padding: '14px 0', borderRadius: 10, border: 'none',
-              background: loading ? '#94a3b8' : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-              color: '#fff', fontWeight: 700, fontSize: 16, cursor: loading ? 'not-allowed' : 'pointer',
-              boxShadow: '0 2px 8px #3b82f640',
-            }}>
-            {loading ? 'Predicting...' : '⚡ Predict Shot Probability'}
-          </button>
-
-          {error && (
-            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, padding: 12, color: '#dc2626', fontSize: 13 }}>
-              {error}
-            </div>
+        {/* Result / placeholder */}
+        <div style={{ textAlign: 'center', padding: '14px 0' }}>
+          {result ? <Gauge prob={result.gru} /> : (
+            <>
+              <div style={{ width: 64, height: 64, borderRadius: '50%', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, background: 'linear-gradient(135deg,#a855f733,#ec489933)', border: '1px solid #ec489955' }}>⚡</div>
+              <div style={{ fontWeight: 700, marginTop: 12 }}>Listo para analizar</div>
+              <div style={{ fontSize: 12, color: '#64748b', marginTop: 4 }}>Elige un escenario y presiona<br /><span style={{ color: '#c084fc' }}>Analizar Posesión</span></div>
+            </>
           )}
         </div>
 
-        {/* Right column: results */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-          {/* Pitch viz */}
-          <div style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 4px #00000018' }}>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: '#1e293b' }}>
-              Pitch Trajectory
-            </div>
-            <PitchViz events={events} />
-          </div>
-
-          {/* Prediction output */}
-          <div style={{ background: '#fff', borderRadius: 12, padding: 20, boxShadow: '0 1px 4px #00000018' }}>
-            <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 12, color: '#1e293b' }}>
-              Shot Probability
-            </div>
-            {result ? (
-              <>
-                <ProbGauge prob={result.shot_probability} />
-                <div style={{ marginTop: 12, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 13 }}>
-                  {[
-                    ['Model', result.model_used.toUpperCase()],
-                    ['Events', result.n_events.toString()],
-                    ['P(shot)', (result.shot_probability * 100).toFixed(2) + '%'],
-                    ['Risk', result.shot_probability > 0.6 ? '🔴 High' : result.shot_probability > 0.35 ? '🟡 Medium' : '🟢 Low'],
-                  ].map(([k, v]) => (
-                    <div key={k} style={{ background: '#f8fafc', borderRadius: 8, padding: '8px 12px' }}>
-                      <div style={{ color: '#64748b', fontSize: 11 }}>{k}</div>
-                      <div style={{ fontWeight: 700, color: '#1e293b' }}>{v}</div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            ) : (
-              <div style={{ textAlign: 'center', color: '#94a3b8', padding: '32px 0', fontSize: 14 }}>
-                Select a scenario and click Predict
-              </div>
-            )}
-          </div>
-
-          {/* Info card */}
-          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 12, padding: 16, fontSize: 13, color: '#166534' }}>
-            <strong>About this model</strong><br />
-            Trained on StatsBomb open data (Bundesliga 2023/24, La Liga 2020/21, Ligue 1 2021/22 + 2022/23).
-            The GRU model processes the full event sequence; the baseline uses aggregate features only.
-            Primary metric: PR-AUC.
-          </div>
+        {/* Metric bars */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <MetricBar icon="🟣" name={result ? 'GRU P(remate)' : 'GRU PR-AUC'} value={result ? result.gru : 0.870} grad="linear-gradient(90deg,#a855f7,#ec4899)" />
+          <MetricBar icon="🔵" name={result ? 'Baseline P(remate)' : 'Baseline PR-AUC'} value={result ? result.baseline : 0.564} grad="linear-gradient(90deg,#38bdf8,#0ea5e9)" />
+          {!result && <MetricBar icon="✅" name="Mejora GRU vs Baseline" value={0.307} grad="linear-gradient(90deg,#34d399,#10b981)" suffix="+30.7 pp" />}
         </div>
+
+        {/* Dataset */}
+        <div style={{ background: '#0b1322', border: '1px solid #1e2a44', borderRadius: 10, padding: 14 }}>
+          <div style={{ ...label, marginBottom: 8 }}>Dataset</div>
+          {[['Partidos', '127'], ['Posesiones', '21,080'], ['Tasa de remate', '14.3%'], ['Ligas', '4']].map(([k, v]) => (
+            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0' }}>
+              <span style={{ color: '#64748b' }}>{k}</span>
+              <span style={{ fontWeight: 700 }}>{v}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Pitch SVG ───────────────────────────────────────────────────────────────────
+function Pitch({ events }: { events: EventRecord[] }) {
+  const W = 1000, H = 640
+  const sx = (x: number) => (x / 120) * W
+  const sy = (y: number) => (y / 80) * H
+  const pts = events.filter(e => e.x !== null && e.y !== null).map((e, i) => ({ x: sx(e.x || 0), y: sy(e.y || 0), t: e.event_type, n: i + 1 }))
+  const lineD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', borderRadius: 12, marginTop: 10, display: 'block' }}>
+      <defs>
+        <linearGradient id="turf" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#1d5e36" /><stop offset="100%" stopColor="#0e3a20" />
+        </linearGradient>
+        <filter id="glow"><feGaussianBlur stdDeviation="5" result="b" /><feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+      </defs>
+      <rect x="0" y="0" width={W} height={H} rx="14" fill="url(#turf)" />
+      {/* stripes */}
+      {Array.from({ length: 8 }).map((_, i) => (
+        <rect key={i} x={(i * W) / 8} y="0" width={W / 8} height={H} fill={i % 2 ? '#ffffff' : '#000000'} opacity="0.03" />
+      ))}
+      <g stroke="#ffffff" strokeOpacity="0.25" strokeWidth="2" fill="none">
+        <rect x="14" y="14" width={W - 28} height={H - 28} rx="6" />
+        <line x1={W / 2} y1="14" x2={W / 2} y2={H - 14} />
+        <circle cx={W / 2} cy={H / 2} r="80" />
+        <rect x="14" y={H / 2 - 110} width="130" height="220" />
+        <rect x={W - 144} y={H / 2 - 110} width="130" height="220" />
+        <rect x="14" y={H / 2 - 50} width="50" height="100" />
+        <rect x={W - 64} y={H / 2 - 50} width="50" height="100" />
+      </g>
+      {/* trajectory */}
+      {pts.length > 1 && <path d={lineD} fill="none" stroke="#fde047" strokeWidth="3" strokeDasharray="2 10" strokeLinecap="round" opacity="0.7" />}
+      {pts.map((p, i) => {
+        const c = colorFor(p.t)
+        return (
+          <g key={i}>
+            <circle cx={p.x} cy={p.y} r="20" fill={c} opacity="0.25" filter="url(#glow)" />
+            <circle cx={p.x} cy={p.y} r="14" fill={c} stroke="#fff" strokeWidth="2" />
+            <text x={p.x} y={p.y + 4} textAnchor="middle" fontSize="13" fontWeight="800" fill="#0b1322">{p.n}</text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+// ── Gauge ────────────────────────────────────────────────────────────────────────
+function Gauge({ prob }: { prob: number }) {
+  const pct = prob * 100
+  const color = prob > 0.6 ? '#ef4444' : prob > 0.35 ? '#fbbf24' : '#22c55e'
+  const risk = prob > 0.6 ? '🔴 Alto' : prob > 0.35 ? '🟡 Medio' : '🟢 Bajo'
+  return (
+    <div>
+      <svg viewBox="0 0 200 116" style={{ width: 200 }}>
+        <path d="M 30 100 A 70 70 0 0 1 170 100" fill="none" stroke="#1e2a44" strokeWidth="16" strokeLinecap="round" />
+        <path d="M 30 100 A 70 70 0 0 1 170 100" fill="none" stroke={color} strokeWidth="16" strokeLinecap="round" strokeDasharray={`${pct * 2.2} 220`} />
+        <text x="100" y="92" textAnchor="middle" fontSize="30" fontWeight="800" fill={color}>{pct.toFixed(1)}%</text>
+      </svg>
+      <div style={{ fontWeight: 700, marginTop: 4 }}>Riesgo: {risk}</div>
+    </div>
+  )
+}
+
+// ── Metric bar ─────────────────────────────────────────────────────────────────
+function MetricBar({ icon, name, value, grad, suffix }: { icon: string; name: string; value: number; grad: string; suffix?: string }) {
+  return (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 5 }}>
+        <span style={{ color: '#94a3b8' }}>{icon} {name}</span>
+        <span style={{ fontWeight: 800, color: '#f472b6' }}>{suffix || value.toFixed(3)}</span>
+      </div>
+      <div style={{ height: 7, borderRadius: 4, background: '#1e2a44', overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${Math.min(100, value * 100)}%`, background: grad, borderRadius: 4 }} />
       </div>
     </div>
   )
