@@ -398,10 +398,14 @@ export default function App() {
             {/* Event list */}
             <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:3,minHeight:0}}>
               {events.map((ev,i)=>(
-                <div key={i} className="evt-row" style={{
+                <div key={i} className="evt-row" draggable
+                  onDragStart={e=>{e.dataTransfer.setData('idx',String(i));e.dataTransfer.effectAllowed='move'}}
+                  onDragOver={e=>{e.preventDefault();e.dataTransfer.dropEffect='move'}}
+                  onDrop={e=>{e.preventDefault();const from=+e.dataTransfer.getData('idx');if(from!==i)setEvents(ev=>{const c=[...ev];const[m]=c.splice(from,1);c.splice(i,0,m);return c})}}
+                  style={{
                   display:'flex',alignItems:'center',gap:5,
                   background:C.card, borderRadius:8, padding:'5px 7px',
-                  borderLeft:`3px solid ${ec(ev.event_type)}`, flexShrink:0,
+                  borderLeft:`3px solid ${ec(ev.event_type)}`, flexShrink:0, cursor:'grab',
                 }}>
                   <span style={{color:C.muted,fontSize:9,minWidth:12,textAlign:'center',fontWeight:800}}>{i+1}</span>
                   <span style={{fontSize:10,fontWeight:700,color:ec(ev.event_type),flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
