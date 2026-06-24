@@ -383,7 +383,7 @@ function Pitch({ events }: { events: EventRecord[] }) {
   const lineD = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ')
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: 750, margin: '10px auto 0', borderRadius: 12, display: 'block' }}>
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', maxWidth: 900, margin: '10px auto 0', borderRadius: 12, display: 'block' }}>
       <defs>
         <linearGradient id="turf" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#1d5e36" /><stop offset="100%" stopColor="#0e3a20" />
