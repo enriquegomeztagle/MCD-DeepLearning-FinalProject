@@ -951,26 +951,6 @@ largas. Permite al analista seguir la jugada evento a evento.
 
 \placeholder{[INSERTAR CAPTURA] Swagger UI en \texttt{http://localhost:8000/docs} mostrando los endpoints disponibles y el esquema JSON del request}
 
-\subsection{Cómo ejecutar el sistema}
-
-\begin{lstlisting}[language=bash, caption={Pasos para levantar el sistema completo.}]
-# 1. Entrenar los modelos (requiere GPU; usa el venv con CUDA)
-python run_pipeline.py all
-
-# 2. Levantar el backend (otra terminal)
-cd MCD-DeepLearning-FinalProject
-uvicorn backend.app.main:app --reload --port 8000
-
-# 3. Levantar el frontend (otra terminal)
-cd frontend
-npm install
-npm run dev
-# Abrir http://localhost:5173 en el navegador
-
-# La documentacion automatica de la API estara en:
-# http://localhost:8000/docs
-\end{lstlisting}
-
 
 %% ═══════════════════════════════════════════════════════════════
 \section{Discusión}
@@ -1042,78 +1022,6 @@ métricas apropiadas para clases desbalanceadas).
 
 %% ═══════════════════════════════════════════════════════════════
 \appendix
-
-\section{Estructura del repositorio}
-\label{app:repo}
-
-\begin{lstlisting}[language=bash, caption={Estructura del repositorio del proyecto.}]
-MCD-DeepLearning-FinalProject/
-|-- run_pipeline.py              # Script maestro (todas las etapas)
-|-- src/
-|   |-- data/
-|   |   |-- download_statsbomb.py       # Descarga datos open de StatsBomb
-|   |   |-- build_possession_dataset.py # Parser eventos -> posesiones
-|   |   `-- create_splits.py            # Split estratificado por match_id
-|   |-- features/
-|   |   `-- encode_possessions.py       # Codificacion de eventos (40 dims)
-|   |-- models/
-|   |   |-- lstm_model.py               # Arquitectura GRU
-|   |   |-- dataset.py                  # PyTorch Dataset/DataLoader
-|   |   |-- train_baseline.py           # Entrenamiento logistic regression
-|   |   `-- train_lstm.py               # Loop de entrenamiento GRU
-|   `-- evaluation/
-|       `-- evaluate_lstm.py            # Evaluacion final GRU vs baseline
-|-- backend/
-|   |-- app/main.py                     # FastAPI - endpoints de inferencia
-|   `-- requirements.txt
-|-- frontend/
-|   `-- src/App.tsx                     # React frontend con visualizacion
-|-- data/
-|   |-- raw/statsbomb/                  # JSONs descargados
-|   `-- processed/
-|       |-- possessions/possessions.parquet
-|       `-- splits/{train,validation,test}_matches.csv
-|-- models/trained/
-|   |-- gru_best.pt                     # Mejor checkpoint GRU
-|   |-- baseline_logreg.pkl             # Modelo baseline serializado
-|   |-- gru_train_log.json              # Metricas por epoca
-|   `-- gru_eval_results.json           # Evaluacion final completa
-|-- notebooks/
-|   |-- eda/01_statsbomb_scope_validation.ipynb
-|   |-- eda/02_possession_dataset_eda.ipynb
-|   |-- experiments/01_baseline_results.ipynb
-|   `-- experiments/02_gru_results.ipynb
-`-- report/
-    |-- main.tex                        # Este documento
-    |-- generate_figures.py             # Genera figuras con matplotlib
-    `-- figures/                        # PDFs y PNGs de figuras
-\end{lstlisting}
-
-\section{Instrucciones de ejecución}
-\label{app:run}
-
-\subsection{Requisitos}
-
-\begin{itemize}[leftmargin=1.5em, noitemsep]
-    \item Python 3.12+
-    \item PyTorch con soporte CUDA (recomendado para entrenamiento)
-    \item Node.js 22+ (para el frontend)
-    \item Dependencias Python: \code{pandas, scikit-learn, statsbombpy, torch, fastapi, uvicorn, pyarrow, tqdm, joblib, matplotlib}
-\end{itemize}
-
-\subsection{Pipeline completo}
-
-\begin{lstlisting}[language=bash, caption={Ejecución del pipeline completo.}]
-# Pipeline de datos y entrenamiento (requiere Python con CUDA)
-python run_pipeline.py all
-
-# Backend (API REST)
-uvicorn backend.app.main:app --reload --port 8000
-
-# Frontend (otra terminal)
-cd frontend && npm install && npm run dev
-# Abrir http://localhost:5173
-\end{lstlisting}
 
 \section{Glosario}
 \label{app:glosario}
