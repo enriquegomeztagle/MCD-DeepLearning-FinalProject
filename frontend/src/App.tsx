@@ -315,11 +315,42 @@ export default function App() {
           )}
         </div>
 
-        {/* Metric bars */}
+        {/* Model comparison cards */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <MetricBar icon="🟣" name={result ? 'GRU P(remate)' : 'GRU PR-AUC'} value={result ? result.gru : 0.870} grad="linear-gradient(90deg,#a855f7,#ec4899)" />
-          <MetricBar icon="🔵" name={result ? 'Baseline P(remate)' : 'Baseline PR-AUC'} value={result ? result.baseline : 0.564} grad="linear-gradient(90deg,#38bdf8,#0ea5e9)" />
-          {!result && <MetricBar icon="✅" name="Mejora GRU vs Baseline" value={0.307} grad="linear-gradient(90deg,#34d399,#10b981)" suffix="+30.7 pp" />}
+          <ModelCard icon="🧠" title="GRU — Deep Learning" subtitle="Procesa la secuencia completa"
+            prob={result ? result.gru : null} prauc="0.870"
+            barGrad="linear-gradient(90deg,#a855f7,#ec4899)" titleColor="#f472b6" />
+          <ModelCard icon="📊" title="Logistic Regression" subtitle="Solo características agregadas"
+            prob={result ? result.baseline : null} prauc="0.564"
+            barGrad="linear-gradient(90deg,#38bdf8,#0ea5e9)" titleColor="#38bdf8" />
+
+          {result && (
+            <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ flex: 1, textAlign: 'center', background: '#0b1322', border: '1px solid #1e2a44', borderRadius: 12, padding: '12px 0' }}>
+                <div style={label}>Diferencia</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#f472b6', marginTop: 4 }}>
+                  {(result.gru - result.baseline >= 0 ? '+' : '') + ((result.gru - result.baseline) * 100).toFixed(1)} pp
+                </div>
+              </div>
+              <div style={{ flex: 1, textAlign: 'center', background: '#0b1322', border: '1px solid #1e2a44', borderRadius: 12, padding: '12px 0' }}>
+                <div style={label}>Ventaja</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: '#c084fc', marginTop: 4 }}>
+                  {result.gru >= result.baseline ? 'GRU' : 'LogReg'}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {result && (
+            <div style={{ background: '#170f2e', border: '1px solid #6d28d955', borderRadius: 12, padding: 14 }}>
+              <div style={{ ...label, color: '#c084fc' }}>💡 Interpretación</div>
+              <div style={{ fontSize: 12, color: '#cbd5e1', marginTop: 6, lineHeight: 1.5 }}>
+                {result.gru >= result.baseline
+                  ? 'El GRU detecta mayor peligro que el modelo lineal en esta secuencia, aprovechando el orden temporal de los eventos que la regresión logística no captura.'
+                  : 'En esta secuencia la regresión logística estima mayor peligro; la estructura temporal aporta poco en este caso concreto.'}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Dataset */}
@@ -406,16 +437,30 @@ function Gauge({ prob }: { prob: number }) {
   )
 }
 
-// ── Metric bar ─────────────────────────────────────────────────────────────────
-function MetricBar({ icon, name, value, grad, suffix }: { icon: string; name: string; value: number; grad: string; suffix?: string }) {
+// ── Model comparison card ─────────────────────────────────────────────────────
+function ModelCard({ icon, title, subtitle, prob, prauc, barGrad, titleColor }: {
+  icon: string; title: string; subtitle: string; prob: number | null; prauc: string; barGrad: string; titleColor: string
+}) {
+  const pct = prob === null ? 0 : prob * 100
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 5 }}>
-        <span style={{ color: '#94a3b8' }}>{icon} {name}</span>
-        <span style={{ fontWeight: 800, color: '#f472b6' }}>{suffix || value.toFixed(3)}</span>
+    <div style={{ background: '#0b1322', border: `1px solid ${titleColor}33`, borderRadius: 12, padding: 14 }}>
+      <div style={{ display: 'flex', gap: 9, alignItems: 'center' }}>
+        <span style={{ fontSize: 18 }}>{icon}</span>
+        <div>
+          <div style={{ fontWeight: 800, fontSize: 13.5, color: titleColor }}>{title}</div>
+          <div style={{ fontSize: 11, color: '#64748b' }}>{subtitle}</div>
+        </div>
       </div>
-      <div style={{ height: 7, borderRadius: 4, background: '#1e2a44', overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${Math.min(100, value * 100)}%`, background: grad, borderRadius: 4 }} />
+      <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 12 }}>Probabilidad de remate</div>
+      <div style={{ fontSize: 26, fontWeight: 800, color: '#f1f5f9', lineHeight: 1.1 }}>
+        {prob === null ? '—' : pct.toFixed(1) + '%'}
+      </div>
+      <div style={{ height: 7, borderRadius: 4, background: '#1e2a44', overflow: 'hidden', marginTop: 5 }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: barGrad, borderRadius: 4, transition: 'width .4s' }} />
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 9, fontSize: 11 }}>
+        <span style={{ color: '#64748b' }}>PR-AUC del modelo</span>
+        <span style={{ fontWeight: 800, color: '#fb923c' }}>{prauc}</span>
       </div>
     </div>
   )
