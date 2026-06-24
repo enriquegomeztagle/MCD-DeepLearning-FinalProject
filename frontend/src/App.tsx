@@ -26,6 +26,9 @@ const CSS = `
   html, body, #root { height: 100%; overflow: hidden; }
   body { background:${C.bg}; color:${C.text}; font-family:'Inter',system-ui,sans-serif; }
   input,select { outline:none; }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance:none; margin:0; }
+  input[type=number] { -moz-appearance:textfield; }
   button { outline:none; font-family:inherit; }
   * { scrollbar-width:thin; scrollbar-color:${C.border} transparent; }
   *::-webkit-scrollbar { width:3px; height:3px; }
@@ -443,14 +446,14 @@ export default function App() {
                       {PLAY_PATTERNS.map(p=><option key={p}>{p}</option>)}
                     </select>
                   </div>
-                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:7}}>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:7}}>
                     {(['x','y','end_x','end_y'] as const).map((k,ki)=>(
                       <div key={k}>
                         <label style={lbl}>{['Inicio X','Inicio Y','Fin X','Fin Y'][ki]}</label>
-                        <div style={{display:'flex',gap:3}}>
+                        <div style={{display:'flex',gap:4}}>
                           <input type="number" value={(newEvt as any)[k]??''} min={0} max={ki%2===0?120:80} step={.5}
                             onChange={e=>setNewEvt(n=>({...n,[k]:e.target.value===''?null:+e.target.value}))}
-                            style={{...inp,flex:1}}/>
+                            style={{...inp,flex:1,minWidth:0,appearance:'textfield',MozAppearance:'textfield',WebkitAppearance:'none'} as any}/>
                           {ki===0&&(
                             <button title="Colocar en campo" onClick={()=>setClickMode(c=>c==='start'?null:'start')} style={{
                               background:clickMode==='start'?`${C.violet}50`:C.card,
