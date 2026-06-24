@@ -573,7 +573,7 @@ export default function App() {
                 </span>
               )}
             </div>
-            <div style={{flex:1,minHeight:0,maxHeight:'65vh',overflow:'hidden',position:'relative'}}>
+            <div style={{flex:1,minHeight:0,overflow:'hidden',position:'relative'}}>
               <Pitch events={events} onPitchClick={clickMode?pitchClick:undefined} clickMode={!!clickMode}/>
             </div>
           </div>
