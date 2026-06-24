@@ -338,7 +338,7 @@ export default function App() {
       <div style={{display:'grid', gridTemplateColumns:'230px 1fr 272px', gridTemplateRows:'1fr auto', height:'100vh', gap:0}}>
 
         {/* ════ LEFT SIDEBAR ════════════════════════════════════════════ */}
-        <div style={{background:C.side, borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', height:'100vh', overflow:'hidden'}}>
+        <div style={{background:C.side, borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden'}}>
 
           {/* Branding */}
           <div style={{padding:'16px 16px 12px', borderBottom:`1px solid ${C.border}`, flexShrink:0}}>
@@ -529,7 +529,7 @@ export default function App() {
         </div>
 
         {/* ════ CENTER — Field ══════════════════════════════════════════ */}
-        <div style={{background:C.bg,display:'flex',flexDirection:'column',height:'100vh',overflow:'hidden',padding:'12px 10px'}}>
+        <div style={{background:C.bg,display:'flex',flexDirection:'column',overflow:'hidden',padding:'12px 10px'}}>
 
           {/* Event sequence strip — above pitch */}
           <div style={{background:C.card,border:`1px solid ${C.border}`,borderRadius:12,padding:'10px 14px',marginBottom:10,flexShrink:0}}>
@@ -576,7 +576,7 @@ export default function App() {
         </div>
 
         {/* ════ RIGHT PANEL — Results ═══════════════════════════════════ */}
-        <div style={{background:C.side,borderLeft:`1px solid ${C.border}`,display:'flex',flexDirection:'column',height:'100vh',overflow:'hidden'}}>
+        <div style={{background:C.side,borderLeft:`1px solid ${C.border}`,display:'flex',flexDirection:'column',overflow:'hidden'}}>
 
           {/* Panel header */}
           <div style={{padding:'18px 16px 14px',borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
