@@ -338,7 +338,8 @@ export default function App() {
       <style>{CSS}</style>
 
       {/* Root: 3-col, full viewport height */}
-      <div style={{display:'grid', gridTemplateColumns:'230px 1fr 272px', gridTemplateRows:'1fr auto', height:'100vh', gap:0}}>
+      <div style={{display:'flex',flexDirection:'column',height:'100vh'}}>
+      <div style={{display:'grid', gridTemplateColumns:'230px 1fr 272px', flex:1, minHeight:0, gap:0}}>
 
         {/* ════ LEFT SIDEBAR ════════════════════════════════════════════ */}
         <div style={{background:C.side, borderRight:`1px solid ${C.border}`, display:'flex', flexDirection:'column', overflow:'hidden', minHeight:0}}>
@@ -702,8 +703,9 @@ export default function App() {
       </div>
 
       {/* Footer */}
-      <div style={{gridColumn:'1/-1',textAlign:'center',padding:'8px 0',color:C.dim,fontSize:11,borderTop:`1px solid ${C.border}`,background:C.side}}>
+      <div style={{textAlign:'center',padding:'6px 0',color:C.dim,fontSize:11,borderTop:`1px solid ${C.border}`,background:C.side,flexShrink:0}}>
         ⚽ <strong style={{color:C.cyan}}>PitchView — Football Possession Analysis</strong> — Luis Alejandro Guillén Alvarez · Enrique Ulises Báez Gómez Tagle
+      </div>
       </div>
     </>
   )
