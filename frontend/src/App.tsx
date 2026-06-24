@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const API_URL = import.meta.env.VITE_API_URL || ''
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 interface EventRecord {
@@ -200,6 +200,12 @@ export default function App() {
       setApiStatus('error')
     }
   }
+
+  useEffect(() => {
+    checkHealth()
+    const id = setInterval(checkHealth, 30000)
+    return () => clearInterval(id)
+  }, [])
 
   const runPrediction = async () => {
     setLoading(true)
